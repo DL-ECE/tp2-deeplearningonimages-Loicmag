@@ -517,8 +517,6 @@ Now using the numpy implement the convolution operation.
 """
 
 def convolution_forward_numpy(image, kernel):
-  #kernel = np.flipud(np.fliplr(kernel))
-  # convolution output
   output = np.zeros_like(image)
 
   # Add zero padding to the input image
@@ -668,24 +666,42 @@ class CNNModel(nn.Module):
         super().__init__()
         # YOUR CODE HERE 
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=5, padding=2),
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.MaxPool2d(2))
+            nn.MaxPool2d(2,stride = 2))
         self.layer2 = nn.Sequential(
-            nn.Conv2d(16, 32, kernel_size=5, padding=2),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d(2))
-        self.fc = nn.Linear(7*7*32, 10)
+            nn.MaxPool2d(2,stride = 2))
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(2,stride = 2))
+        self.layer4 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.MaxPool2d(2,stride = 2))
+        self.fc = nn.Sequential(nn.Linear(128, 64))
+        self.fc1 = nn.Sequential(nn.Linear(64,64))
+        self.fc2 = nn.Sequential(nn.Linear(64,10))
+
+        
 
     def forward(self, input):
         #x = self.conv1(input)
         # YOUR CODE HERE 
         out = self.layer1(input)
         out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
         out = out.view(out.size(0), -1)
         out = self.fc(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
         return out
         #return y
 
@@ -738,9 +754,9 @@ if __name__ == "__main__":
     # Network Hyperparameters 
     # YOUR CODE HERE 
     minibatch_size = 50
-    nepoch = 50
-    learning_rate = 0.01
-    momentum = 0.5
+    nepoch = 10
+    learning_rate = 0.001
+    momentum = 0
 
 
     model = CNNModel()
@@ -766,7 +782,12 @@ if __name__ == "__main__":
       print(f"Result Test dataset {eval_result}")
 
 """## Open Analysis
-Same as TP 1 please write a short description of your experiment
+La valeur de précision à atteindre de 90% a été dans un premier temps dure à atteindre.
+Dans un premier temps mon CNN était composé de seulement deux couches. Avec cette architecture l'accuracy montait dans un premier temps jusqu'à 89% sans problème mais semblait stagner à ce niveau là. Elle oscillait même sans jamais dépasser 90% où alors très rarement malgré le fait que j'avais configuré un nombre important d'epoch (50).
+
+Dans un second temps j'ai décidé d'ajouter 2 autres couches. Cela s'est révelé concluant car mon accuracy dépassait beaucoup plus souvent les 90% mais au bout d'un certain temps elle retombait à 89%. Elle oscillait toujours.
+J'ai donc finalement décidé de modifier le larning rate et de la baisser à 0.001.
+A partir de ce moment le CNN dépassait les 90% d'accuracy à partir de l'epoch 3 et restait au dessus. Il même réussi à atteindre une accuracy de 91,4%
 
 # BONUS 
 
@@ -780,7 +801,7 @@ if __name__ == "__main__" :
     # TODO HERE: Upload an image to the notebook in the navigation bar on the left
     # `File` `Load File`and load an image to the notebook. 
     
-    filename = "" 
+    filename = "linkedinsantebd.png" 
     # Loading a already trained network in pytorch 
     model = torch.hub.load('pytorch/vision:v0.6.0', 'deeplabv3_resnet101', pretrained=True)
     model.eval()
