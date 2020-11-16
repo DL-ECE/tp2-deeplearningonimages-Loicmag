@@ -162,7 +162,7 @@ print(mat_torch[0,3]) # Return first row and 4th column element
 # To do computation on the GPU (graphic card calculation can be 50x faster)
 
 # What is the GPU on this machine ? 
-!nvidia-smi
+#!nvidia-smi
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device
 
@@ -571,18 +571,23 @@ Now let's use pytorch convolution layer to do the forward pass. Use the document
 """
 
 def convolution_forward_torch(image, kernel):
-    convol = nn.Conv2d(1638 ,1,kernel.shape,stride=2) 
-    ker = torch.from_numpy(kernel)
-    image = torch.from_numpy(image)
+    #convol = nn.Conv2d(1638 ,1,kernel.shape,stride=2) 
+    #ker = torch.from_numpy(kernel)
+    #image = torch.from_numpy(image)
     #image = image.type(torch.LongTensor)
     #convol.weight = torch.nn.Parameter(ker)
-    image = torch.unsqueeze(image, 0)
-    image = image.float()
-    output = convol(image)
-    return output
-output_image = convolution_forward_torch(image,K_0)
-output_image = output_image.detach().numpy()
-display_image(output_image)
+    #image = torch.unsqueeze(image, 0)
+    #image = image.float()
+    #output = convol(image)
+    I = image.reshape(1,1,image.shape[1],image.shape[0])
+    I = torch.Tensor(I)
+    K = kernel.reshape(1,1,kernel.shape[1],kernel.shape[0])
+    K = torch.Tensor(K)
+    Convol = F.conv2d(I,K,padding=1,groups=1)
+    return Conv.numpy().astype(int).reshape(I.shape[2],I.shape[3])
+#output_image = convolution_forward_torch(image,K_0)
+# output_image = output_image.detach().numpy()
+#display_image(output_image)
 
 """In pytorch you can also access other layer like convolution2D, pooling layers, for example in the following cell use the __torch.nn.MaxPool2d__ to redduce the image size."""
 
