@@ -528,7 +528,6 @@ def convolution_forward_numpy(image, kernel):
   # Loop over every pixel of the image
   for x in range(image.shape[1]):
     for y in range(image.shape[0]):
-      # element-wise multiplication of the kernel and the image
       output[y, x]=(kernel * image_padded[y: y+3, x: x+3]).sum()
 
   return output
@@ -668,33 +667,27 @@ class CNNModel(nn.Module):
     def __init__(self, classes=10):
         super().__init__()
         # YOUR CODE HERE 
-        #self.conv1 = nn.Conv2d(3, 6, 5,stride=1,padding=2)
-        self.cnn_layers = Sequential(
-            # Defining a 2D convolution layer
-            Conv2d(1, 4, kernel_size=3, stride=1, padding=1),
-            BatchNorm2d(4),
-            ReLU(inplace=True),
-            MaxPool2d(kernel_size=2, stride=2),
-            # Defining another 2D convolution layer
-            Conv2d(4, 4, kernel_size=3, stride=1, padding=1),
-            BatchNorm2d(4),
-            ReLU(inplace=True),
-            MaxPool2d(kernel_size=2, stride=2),
-        )
-
-        self.linear_layers = Sequential(
-            Linear(4 * 7 * 7, 10)
-        )
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=5, padding=2),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(16, 32, kernel_size=5, padding=2),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2))
+        self.fc = nn.Linear(7*7*32, 10)
 
     def forward(self, input):
-        x = self.conv1(input)
+        #x = self.conv1(input)
         # YOUR CODE HERE 
-        #y = self.pool(x)
-        x = self.cnn_layers(x)
-        x = x.view(x.size(0), -1)
-        x = self.linear_layers(x)
+        out = self.layer1(input)
+        out = self.layer2(out)
+        out = out.view(out.size(0), -1)
+        out = self.fc(out)
+        return out
         #return y
-        return x
 
 def train_one_epoch(model, device, data_loader, optimizer):
     train_loss = 0
@@ -705,7 +698,11 @@ def train_one_epoch(model, device, data_loader, optimizer):
         output = model(data)
 
         # YOUR CODE HERE 
-        loss = torch.nn.CrossEntropyLoss()
+        #criterion = nn.CrossEntropyLoss()
+        #loss = criterion(outputs, target)
+        loss = F.cross_entropy(output,target)
+        #add optimizer.zerograd
+        optimizer.zero_grad()
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
@@ -726,6 +723,8 @@ def evaluation(model, device, data_loader):
         data, target = data.to(device), target.to(device)
         output = model(data)
         # YOUR CODE HERE 
+        #criterion = nn.CrossEntropyLoss()
+        #eval_loss += data.shape[0] * criterion(output, target).item()
         eval_loss += F.cross_entropy(output, target).item()
         prediction = output.argmax(dim=1)
         correct += torch.sum(prediction.eq(target)).item()
@@ -738,17 +737,23 @@ if __name__ == "__main__":
     
     # Network Hyperparameters 
     # YOUR CODE HERE 
-    minibatch_size = 100
-    nepoch = 10
+    minibatch_size = 50
+    nepoch = 50
     learning_rate = 0.01
-    momentum = 0
+    momentum = 0.5
 
 
     model = CNNModel()
     model.to(device)
 
     # YOUR CODE HERE 
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    #retrieve the data
+    fmnist_train = FashionMNIST(os.getcwd(), train=True, download=True, transform=transforms.ToTensor())
+    fmnist_train = DataLoader(fmnist_train, batch_size=32, num_workers=4, pin_memory=True)
+    fmnist_val = FashionMNIST(os.getcwd(), train=False, download=True, transform=transforms.ToTensor())
+    fmnist_val = DataLoader(fmnist_val, batch_size=32, num_workers=4,  pin_memory=True)
 
     # Train for an number of epoch 
     for epoch in range(nepoch):
