@@ -197,6 +197,8 @@ def softmax(input_tensor: torch.Tensor)-> torch.Tensor:
 
 def target_to_one_hot(targets: torch.Tensor, num_classes=10) -> torch.Tensor:
     """Create the one hot representation of the target""" 
+    if (type(input_tensor) != torch.Tensor):
+      input_tensor = torch.from_numpy(input_tensor.astype(np.float32)) 
     one_hot_matrix = torch.zeros((targets.shape[0], num_classes)) 
     #one_hot_matrix = torch.nn.functional.one_hot(targets)
     #print(one_hot_matrix)
